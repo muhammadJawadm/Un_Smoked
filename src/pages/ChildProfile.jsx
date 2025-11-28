@@ -34,7 +34,7 @@ export default function ChildProfile() {
               </div>
               <div className='ml-auto'>
                 <Link 
-                  to={`/children/${child.id}/edit`} 
+                  to={`/childedit`} 
                   className="px-4 py-2 text-sm rounded-md font-medium text-white hover:opacity-80 shadow-sm"
                   style={{ backgroundColor: '#836852' }}
                 >
