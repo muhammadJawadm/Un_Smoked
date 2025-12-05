@@ -2,16 +2,34 @@ import { useState, Fragment } from "react";
 import { Link, NavLink } from "react-router-dom";
 
 // icons
-import { BsCalendar2Event } from "react-icons/bs";
-import { VscFeedback } from "react-icons/vsc";
 import { RiCloseFill, RiHome4Line, RiLogoutCircleLine } from "react-icons/ri";
-import { BiSolidReport } from "react-icons/bi";
-import { FaRunning } from "react-icons/fa";
-import { IoCheckmarkDone, IoMenuOutline, IoStatsChart } from "react-icons/io5";
-import { MdAssignmentAdd, MdMenuOpen, MdOutlineAddTask, MdTask } from "react-icons/md";
-import logo from "../../assets/logo1.png";
+import logo from "../../assets/logo.png";
 import { GoSidebarCollapse, GoSidebarExpand } from "react-icons/go";
-import { Users, Baby, Award, HelpCircle, Settings } from "lucide-react";
+import { 
+  Users, 
+  Award, 
+  HelpCircle, 
+  Settings, 
+  ChevronDown, 
+  ChevronRight,
+  TrendingUp,
+  Trophy,
+  Target,
+  MessageSquare,
+  BarChart3,
+  Shield,
+  Flag,
+  AlertCircle,
+  UserCheck,
+  UserX,
+  Activity,
+  Medal,
+  Gift,
+  Zap,
+  FileText,
+  Lock,
+  Bell
+} from "lucide-react";
 
 /**
  * 1) Icon registry — keeps the MENU "JSON" clean by using string keys.
@@ -19,25 +37,130 @@ import { Users, Baby, Award, HelpCircle, Settings } from "lucide-react";
 const ICONS = {
   RiHome4Line,
   Users,
-  Baby,
-  Award,
+  TrendingUp,
+  Trophy,
+  Target,
+  MessageSquare,
+  BarChart3,
   HelpCircle,
   Settings,
+  Award,
+  Shield,
+  Flag,
+  AlertCircle,
+  UserCheck,
+  UserX,
+  Activity,
+  Medal,
+  Gift,
+  Zap,
+  FileText,
+  Lock,
+  Bell
 };
 
 /**
- * 2) Single source of truth for all links.
+ * 2) Single source of truth for all links - UnSmoke Admin Panel
  *    - Change order/labels/paths by editing this array only.
  *    - "icon" is a key into ICONS above.
  */
 const MENU = [
-  { key: "home", label: "Home", to: "/", icon: "RiHome4Line" },
-
-  { key: "Parents", label: "Total Parents", to: "/TotalParents", icon: "Users" },
-  { key: "Children", label: "Total Children", to: "/TotalChildren", icon: "Baby" },
-  { key: "Milestones", label: "Total Milestones", to: "/milestones", icon: "Award" },
-  { key: "faq", label: "FAQs", to: "/faqs", icon: "HelpCircle" },
-  { key: "app-settings", label: "App Settings", to: "/setting", icon: "Settings" },
+  { 
+    key: "dashboard", 
+    label: "Dashboard", 
+    to: "/", 
+    icon: "RiHome4Line" 
+  },
+  { 
+    key: "users", 
+    label: "Users Management", 
+    to: "/users", 
+    icon: "Users",
+    subItems: [
+      { key: "all-users", label: "All Users", to: "/users/all" },
+      { key: "active-users", label: "Active Users", to: "/users/active" },
+      { key: "banned-users", label: "Banned Users", to: "/users/banned" },
+      { key: "user-activity", label: "User Activity", to: "/users/activity" }
+    ]
+  },
+  { 
+    key: "streaks", 
+    label: "Streaks & Progress", 
+    to: "/streaks", 
+    icon: "TrendingUp",
+    subItems: [
+      { key: "streaks-overview", label: "Overview", to: "/streaks/overview" },
+      { key: "longest-streaks", label: "Longest Streaks", to: "/streaks/longest" },
+      { key: "broken-streaks", label: "Broken Streaks", to: "/streaks/broken" },
+      { key: "daily-logs", label: "Daily Logs", to: "/streaks/daily-logs" }
+    ]
+  },
+  { 
+    key: "rewards", 
+    label: "Rewards & Medals", 
+    to: "/rewards", 
+    icon: "Trophy",
+    subItems: [
+      { key: "all-medals", label: "All Medals", to: "/rewards/medals" },
+      { key: "create-medal", label: "Create Medal", to: "/rewards/create" },
+      { key: "medal-stats", label: "Medal Statistics", to: "/rewards/stats" },
+      { key: "user-achievements", label: "User Achievements", to: "/rewards/achievements" }
+    ]
+  },
+  { 
+    key: "challenges", 
+    label: "Challenges", 
+    to: "/challenges", 
+    icon: "Target",
+    subItems: [
+      { key: "all-challenges", label: "All Challenges", to: "/challenges/all" },
+      { key: "active-challenges", label: "Active Challenges", to: "/challenges/active" },
+      { key: "challenge-templates", label: "Templates", to: "/challenges/templates" },
+      { key: "challenge-moderation", label: "Moderation", to: "/challenges/moderation" }
+    ]
+  },
+  { 
+    key: "community", 
+    label: "Community", 
+    to: "/community", 
+    icon: "MessageSquare",
+    subItems: [
+      { key: "all-posts", label: "All Posts", to: "/community/posts" },
+      { key: "reported-content", label: "Reported Content", to: "/community/reported" },
+      { key: "moderation", label: "Moderation", to: "/community/moderation" },
+      { key: "user-feedback", label: "User Feedback", to: "/community/feedback" }
+    ]
+  },
+  { 
+    key: "analytics", 
+    label: "Analytics", 
+    to: "/analytics", 
+    icon: "BarChart3",
+    subItems: [
+      { key: "app-usage", label: "App Usage", to: "/analytics/usage" },
+      { key: "user-engagement", label: "User Engagement", to: "/analytics/engagement" },
+      { key: "success-rates", label: "Success Rates", to: "/analytics/success" },
+      { key: "reports", label: "Reports", to: "/analytics/reports" }
+    ]
+  },
+  { 
+    key: "faqs", 
+    label: "FAQs", 
+    to: "/faqs", 
+    icon: "HelpCircle" 
+  },
+  { 
+    key: "settings", 
+    label: "Settings", 
+    to: "/setting", 
+    icon: "Settings",
+    subItems: [
+      { key: "app-settings", label: "App Settings", to: "/setting/app" },
+      { key: "privacy-policy", label: "Privacy Policy", to: "/setting/privacy" },
+      { key: "terms", label: "Terms & Conditions", to: "/setting/terms" },
+      { key: "notifications", label: "Notifications", to: "/setting/notifications" }
+    ]
+  }
 ];
 
 /**
@@ -49,26 +172,93 @@ const navClasses = (isActive, small) =>
     : "flex items-center gap-1.5 py-2 px-5 text-gray-600 rounded-lg hover:bg-[#F7F5F3] drop-shadow hover:text-[#836852] hover:font-medium outline-none transition-all";
 
 /**
- * 4) Reusable item renderer.
+ * 4) Reusable item renderer with nested subitems support.
  */
-function SidebarItem({ to, label, icon, small, onClick }) {
-  const Icon = ICONS[icon] ?? Fragment;
+function SidebarItem({ item, small, onMenuClose, expandedMenus, toggleMenu, level = 0 }) {
+  const Icon = ICONS[item.icon] ?? Fragment;
+  const hasSubItems = item.subItems && item.subItems.length > 0;
+  const isExpanded = expandedMenus[item.key];
+
+  // If item has subitems, render as a button to toggle
+  if (hasSubItems) {
+    return (
+      <>
+        <li>
+          <button
+            onClick={() => toggleMenu(item.key)}
+            className={`w-full flex items-center justify-between gap-1.5 py-2 px-5 text-gray-600 rounded-lg hover:bg-[#F7F5F3] drop-shadow hover:text-[#836852] hover:font-medium outline-none transition-all ${
+              level > 0 ? 'pl-8' : ''
+            }`}
+            style={{ paddingLeft: level > 0 ? `${20 + level * 16}px` : undefined }}
+          >
+            <div className="flex items-center gap-1.5">
+              {level === 0 && <Icon className="size-5" />}
+              {!small && <span className="whitespace-nowrap">{item.label}</span>}
+            </div>
+            {!small && (
+              isExpanded ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronRight className="size-4" />
+              )
+            )}
+          </button>
+        </li>
+
+        {/* Render subitems when expanded */}
+        {isExpanded && !small && (
+          <ul className="space-y-1">
+            {item.subItems.map((subItem) => (
+              <SidebarItem
+                key={subItem.key}
+                item={subItem}
+                small={small}
+                onMenuClose={onMenuClose}
+                expandedMenus={expandedMenus}
+                toggleMenu={toggleMenu}
+                level={level + 1}
+              />
+            ))}
+          </ul>
+        )}
+      </>
+    );
+  }
+  
+  // Regular item without subitems - render as NavLink
   return (
-    <li onClick={onClick}>
-      <NavLink 
-        to={to} 
+    <li>
+      <NavLink
+        to={item.to}
+        onClick={onMenuClose}
         className={({ isActive }) => navClasses(isActive, small)}
-        style={({ isActive }) => isActive ? { backgroundColor: '#836852' } : {}}
+        style={({ isActive }) =>
+          isActive
+            ? { 
+                backgroundColor: '#836852',
+                paddingLeft: level > 0 ? `${20 + level * 16}px` : undefined 
+              }
+            : { paddingLeft: level > 0 ? `${20 + level * 16}px` : undefined }
+        }
       >
-        <Icon className="size-5" />
-        {!small && <span className="whitespace-nowrap">{label}</span>}
+        {level === 0 && <Icon className="size-5" />}
+        {!small && <span className="whitespace-nowrap">{item.label}</span>}
       </NavLink>
     </li>
   );
 }
 
 export default function Sidebar({ smallSidebar, setSmallSidebar }) {
+  const [expandedMenus, setExpandedMenus] = useState({});
   const [showMenu, setShowMenu] = useState(false);
+
+  const toggleMenu = (key) => {
+    setExpandedMenus((prevState) => ({
+      ...prevState,
+      [key]: !prevState[key],
+    }));
+  };
+
 
   return (
     <>
@@ -115,7 +305,7 @@ export default function Sidebar({ smallSidebar, setSmallSidebar }) {
               {!smallSidebar && (
                 <li>
                   <Link to="/" className="flex items-center justify-center  rounded-lg">
-                    <img src={logo}  alt="Logo" className="object-cover h-24" />
+                    <img src={logo}  alt="Logo" className="object-cover w-48 h-12 mb-5" />
                   </Link>
                 </li>
               )}
@@ -130,11 +320,11 @@ export default function Sidebar({ smallSidebar, setSmallSidebar }) {
               {MENU.map((item) => (
                 <SidebarItem
                   key={item.key}
-                  to={item.to}
-                  label={item.label}
-                  icon={item.icon}
+                  item={item}
                   small={smallSidebar}
-                  onClick={() => setShowMenu(false)}
+                  onMenuClose={() => setShowMenu(false)}
+                  expandedMenus={expandedMenus}
+                  toggleMenu={toggleMenu}
                 />
               ))}
             </ul>
