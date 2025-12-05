@@ -305,7 +305,7 @@ export default function Sidebar({ smallSidebar, setSmallSidebar }) {
               {!smallSidebar && (
                 <li>
                   <Link to="/" className="flex items-center justify-center  rounded-lg">
-                    <img src={logo}  alt="Logo" className="object-cover w-48 h-12 mb-5" />
+                    <img src={logo}  alt="Logo" className="object-cover w-80 h-10 mb-5" />
                   </Link>
                 </li>
               )}
