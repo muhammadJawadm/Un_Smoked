@@ -1,39 +1,23 @@
-import { useState, Fragment } from "react";
-import { Link, NavLink } from "react-router-dom";
+/* eslint-disable react/prop-types */
+import { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
-// icons
 import { RiCloseFill, RiHome4Line, RiLogoutCircleLine } from "react-icons/ri";
-import logo from "../../assets/logo.png";
 import { GoSidebarCollapse, GoSidebarExpand } from "react-icons/go";
-import { 
-  Users, 
-  Award, 
-  HelpCircle, 
-  Settings, 
-  ChevronDown, 
-  ChevronRight,
+import {
+  Users,
   TrendingUp,
   Trophy,
   Target,
   MessageSquare,
   BarChart3,
-  Shield,
-  Flag,
-  AlertCircle,
-  UserCheck,
-  UserX,
-  Activity,
-  Medal,
-  Gift,
-  Zap,
-  FileText,
-  Lock,
-  Bell
+  HelpCircle,
+  Settings,
+  Milestone,
 } from "lucide-react";
+import logo from "../../assets/logo.png";
 
-/**
- * 1) Icon registry — keeps the MENU "JSON" clean by using string keys.
- */
 const ICONS = {
   RiHome4Line,
   Users,
@@ -44,204 +28,41 @@ const ICONS = {
   BarChart3,
   HelpCircle,
   Settings,
-  Award,
-  Shield,
-  Flag,
-  AlertCircle,
-  UserCheck,
-  UserX,
-  Activity,
-  Medal,
-  Gift,
-  Zap,
-  FileText,
-  Lock,
-  Bell
+  Milestone,
 };
 
-/**
- * 2) Single source of truth for all links - UnSmoke Admin Panel
- *    - Change order/labels/paths by editing this array only.
- *    - "icon" is a key into ICONS above.
- */
 const MENU = [
-  { 
-    key: "dashboard", 
-    label: "Dashboard", 
-    to: "/", 
-    icon: "RiHome4Line" 
-  },
-  { 
-    key: "users", 
-    label: "Users Management", 
-    to: "/users", 
-    icon: "Users",
-    subItems: [
-      { key: "all-users", label: "All Users", to: "/users/all" },
-      { key: "active-users", label: "Active Users", to: "/users/active" },
-      { key: "banned-users", label: "Banned Users", to: "/users/banned" },
-      { key: "user-activity", label: "User Activity", to: "/users/activity" }
-    ]
-  },
-  { 
-    key: "streaks", 
-    label: "Streaks & Progress", 
-    to: "/streaks", 
-    icon: "TrendingUp",
-    subItems: [
-      { key: "streaks-overview", label: "Overview", to: "/streaks/overview" },
-      { key: "longest-streaks", label: "Longest Streaks", to: "/streaks/longest" },
-      { key: "broken-streaks", label: "Broken Streaks", to: "/streaks/broken" },
-      { key: "daily-logs", label: "Daily Logs", to: "/streaks/daily-logs" }
-    ]
-  },
-  { 
-    key: "rewards", 
-    label: "Rewards & Medals", 
-    to: "/rewards", 
-    icon: "Trophy",
-    subItems: [
-      { key: "all-medals", label: "All Medals", to: "/rewards/medals" },
-      { key: "create-medal", label: "Create Medal", to: "/rewards/create" },
-      { key: "medal-stats", label: "Medal Statistics", to: "/rewards/stats" },
-      { key: "user-achievements", label: "User Achievements", to: "/rewards/achievements" }
-    ]
-  },
-  { 
-    key: "challenges", 
-    label: "Challenges", 
-    to: "/challenges", 
-    icon: "Target",
-    subItems: [
-      { key: "all-challenges", label: "All Challenges", to: "/challenges/all" },
-      { key: "active-challenges", label: "Active Challenges", to: "/challenges/active" },
-      { key: "challenge-templates", label: "Templates", to: "/challenges/templates" },
-      { key: "challenge-moderation", label: "Moderation", to: "/challenges/moderation" }
-    ]
-  },
-  { 
-    key: "community", 
-    label: "Community", 
-    to: "/community", 
-    icon: "MessageSquare",
-    subItems: [
-      { key: "all-posts", label: "All Posts", to: "/community/posts" },
-      { key: "reported-content", label: "Reported Content", to: "/community/reported" },
-      { key: "moderation", label: "Moderation", to: "/community/moderation" },
-      { key: "user-feedback", label: "User Feedback", to: "/community/feedback" }
-    ]
-  },
-  { 
-    key: "analytics", 
-    label: "Analytics", 
-    to: "/analytics", 
-    icon: "BarChart3",
-    subItems: [
-      { key: "app-usage", label: "App Usage", to: "/analytics/usage" },
-      { key: "user-engagement", label: "User Engagement", to: "/analytics/engagement" },
-      { key: "success-rates", label: "Success Rates", to: "/analytics/success" },
-      { key: "reports", label: "Reports", to: "/analytics/reports" }
-    ]
-  },
-  { 
-    key: "faqs", 
-    label: "FAQs", 
-    to: "/faqs", 
-    icon: "HelpCircle" 
-  },
-  { 
-    key: "settings", 
-    label: "Settings", 
-    to: "/setting", 
-    icon: "Settings",
-    subItems: [
-      { key: "app-settings", label: "App Settings", to: "/setting/app" },
-      { key: "privacy-policy", label: "Privacy Policy", to: "/setting/privacy" },
-      { key: "terms", label: "Terms & Conditions", to: "/setting/terms" },
-      { key: "notifications", label: "Notifications", to: "/setting/notifications" }
-    ]
-  }
+  { key: "dashboard",   label: "Dashboard",   to: "/",             icon: "RiHome4Line"  },
+  { key: "users",       label: "Users",        to: "/users",        icon: "Users"        },
+  { key: "streaks",     label: "Streaks",      to: "/streaks",      icon: "TrendingUp"   },
+  { key: "rewards",     label: "Rewards",      to: "/rewards",      icon: "Trophy"       },
+  { key: "challenges",  label: "Challenges",   to: "/challenges",   icon: "Target"       },
+  { key: "milestones",  label: "Milestones",   to: "/milestones",   icon: "Milestone"    },
+  { key: "community",   label: "Community",    to: "/community",    icon: "MessageSquare"},
+  { key: "analytics",   label: "Analytics",    to: "/analytics",    icon: "BarChart3"    },
+  { key: "faqs",        label: "FAQs",         to: "/faqs",         icon: "HelpCircle"   },
+  { key: "settings",    label: "Settings",     to: "/setting",      icon: "Settings"     },
 ];
 
-/**
- * 3) Utility: shared classes for active/inactive states.
- */
-const navClasses = (isActive, small) =>
-  isActive
-    ? `flex items-center ${small ? 'justify-center' : 'px-5'} gap-1.5 py-2 rounded-lg shadow text-white font-semibold`
-    : "flex items-center gap-1.5 py-2 px-5 text-gray-600 rounded-lg hover:bg-[#F7F5F3] drop-shadow hover:text-[#836852] hover:font-medium outline-none transition-all";
+function SidebarItem({ item, small, onMenuClose }) {
+  const Icon = ICONS[item.icon];
 
-/**
- * 4) Reusable item renderer with nested subitems support.
- */
-function SidebarItem({ item, small, onMenuClose, expandedMenus, toggleMenu, level = 0 }) {
-  const Icon = ICONS[item.icon] ?? Fragment;
-  const hasSubItems = item.subItems && item.subItems.length > 0;
-  const isExpanded = expandedMenus[item.key];
-
-  // If item has subitems, render as a button to toggle
-  if (hasSubItems) {
-    return (
-      <>
-        <li>
-          <button
-            onClick={() => toggleMenu(item.key)}
-            className={`w-full flex items-center justify-between gap-1.5 py-2 px-5 text-gray-600 rounded-lg hover:bg-[#F7F5F3] drop-shadow hover:text-[#836852] hover:font-medium outline-none transition-all ${
-              level > 0 ? 'pl-8' : ''
-            }`}
-            style={{ paddingLeft: level > 0 ? `${20 + level * 16}px` : undefined }}
-          >
-            <div className="flex items-center gap-1.5">
-              {level === 0 && <Icon className="size-5" />}
-              {!small && <span className="whitespace-nowrap">{item.label}</span>}
-            </div>
-            {!small && (
-              isExpanded ? (
-                <ChevronDown className="size-4" />
-              ) : (
-                <ChevronRight className="size-4" />
-              )
-            )}
-          </button>
-        </li>
-
-        {/* Render subitems when expanded */}
-        {isExpanded && !small && (
-          <ul className="space-y-1">
-            {item.subItems.map((subItem) => (
-              <SidebarItem
-                key={subItem.key}
-                item={subItem}
-                small={small}
-                onMenuClose={onMenuClose}
-                expandedMenus={expandedMenus}
-                toggleMenu={toggleMenu}
-                level={level + 1}
-              />
-            ))}
-          </ul>
-        )}
-      </>
-    );
-  }
-  
-  // Regular item without subitems - render as NavLink
   return (
     <li>
       <NavLink
         to={item.to}
+        end={item.to === "/"}
         onClick={onMenuClose}
-        className={({ isActive }) => navClasses(isActive, small)}
-        style={({ isActive }) =>
+        className={({ isActive }) => [
+          "flex items-center gap-3 py-2.5 rounded-lg transition-all",
+          small ? "justify-center px-2" : "px-5",
           isActive
-            ? { 
-                backgroundColor: '#836852',
-                paddingLeft: level > 0 ? `${20 + level * 16}px` : undefined 
-              }
-            : { paddingLeft: level > 0 ? `${20 + level * 16}px` : undefined }
-        }
+            ? "text-white font-semibold shadow-sm"
+            : "text-gray-600 hover:bg-[#ede9e5] hover:text-[#836852] hover:font-medium",
+        ].join(" ")}
+        style={({ isActive }) => (isActive ? { backgroundColor: "#836852" } : {})}
       >
-        {level === 0 && <Icon className="size-5" />}
+        {Icon && <Icon className="size-5 shrink-0" />}
         {!small && <span className="whitespace-nowrap">{item.label}</span>}
       </NavLink>
     </li>
@@ -249,114 +70,131 @@ function SidebarItem({ item, small, onMenuClose, expandedMenus, toggleMenu, leve
 }
 
 export default function Sidebar({ smallSidebar, setSmallSidebar }) {
-  const [expandedMenus, setExpandedMenus] = useState({});
   const [showMenu, setShowMenu] = useState(false);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
-  const toggleMenu = (key) => {
-    setExpandedMenus((prevState) => ({
-      ...prevState,
-      [key]: !prevState[key],
-    }));
+  const closeMenu = () => setShowMenu(false);
+
+  const handleLogout = () => {
+    closeMenu();
+    logout();
+    navigate("/login");
   };
-
 
   return (
     <>
-      {/* Mobile top bar */}
-      <div className="px-4 sm:px-8 py-2 lg:py-0" style={{ backgroundColor: '#F7F5F3' }}>
+      {/* Mobile hamburger button */}
+      <div className="px-4 sm:px-8 py-2 lg:hidden" style={{ backgroundColor: "#F7F5F3" }}>
         <button
           type="button"
           onClick={() => setShowMenu(true)}
-          className="flex items-center p-2 text-sm text-white border-2 rounded-lg lg:hidden hover:opacity-80"
-          style={{ backgroundColor: '#836852', borderColor: '#836852' }}
+          className="flex items-center p-2 text-white rounded-lg hover:opacity-80"
+          style={{ backgroundColor: "#836852" }}
+          aria-label="Open sidebar"
         >
-          <span className="sr-only">Open sidebar</span>
           <svg className="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-            <path clipRule="evenodd" fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
+            <path
+              clipRule="evenodd"
+              fillRule="evenodd"
+              d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"
+            />
           </svg>
         </button>
       </div>
 
+      {/* Mobile backdrop overlay */}
+      {showMenu && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={closeMenu}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         aria-label="Sidebar"
-        className={`fixed top-2.5 left-2.5 z-40 bottom-2.5 rounded-2xl border-2 border-black/10 ${showMenu ? "" : "hidden"} ${smallSidebar ? "w-20" : "w-64"} lg:block`}
-        style={{ backgroundColor: '#F7F5F3' }}
+        className={[
+          "fixed top-2.5 left-2.5 z-40 bottom-2.5 rounded-2xl border border-black/10",
+          showMenu ? "block" : "hidden",
+          smallSidebar ? "w-20" : "w-72",
+          "lg:block",
+        ].join(" ")}
+        style={{ backgroundColor: "#F7F5F3" }}
       >
-        <div className="h-full px-3 py-4 overflow-y-visible relative">
-          {/* Close (mobile) */}
-          {showMenu && (
-            <button
-              className="absolute top-4 -right-4 rounded-xl size-8 flex items-center justify-center text-xl text-white lg:hidden hover:opacity-80"
-              style={{ backgroundColor: '#836852' }}
-              onClick={() => setShowMenu(false)}
-              aria-label="Close sidebar"
-            >
-              <RiCloseFill className="size-6" />
-            </button>
-          )}
+        <div className="h-full px-3 py-4 overflow-y-auto flex flex-col">
 
-          <div className="flex flex-col justify-between h-full">
-            <ul className="space-y-2 font-normal text-sm">
-              {/* Collapse toggle */}
+          {/* Mobile close button */}
+          <button
+            className="absolute top-4 -right-4 rounded-xl size-8 flex items-center justify-center text-white lg:hidden hover:opacity-80"
+            style={{ backgroundColor: "#836852" }}
+            onClick={closeMenu}
+            aria-label="Close sidebar"
+          >
+            <RiCloseFill className="size-6" />
+          </button>
 
-
-              {/* Logo (hidden when collapsed) */}
-              {!smallSidebar && (
-                <li>
-                  <Link to="/" className="flex items-center justify-center  rounded-lg">
-                    <img src={logo}  alt="Logo" className="object-cover w-80 h-10 mb-5" />
-                  </Link>
-                </li>
-              )}
-
-              {/* Logo (hidden when collapsed) */}
-              {smallSidebar && (
-                <li className="my-8">
-                </li>
-              )}
-
-              {/* Menu items */}
-              {MENU.map((item) => (
-                <SidebarItem
-                  key={item.key}
-                  item={item}
-                  small={smallSidebar}
-                  onMenuClose={() => setShowMenu(false)}
-                  expandedMenus={expandedMenus}
-                  toggleMenu={toggleMenu}
-                />
-              ))}
-            </ul>
-
-            {/* Footer / Logout */}
-            <div>
-              <Link to="/login">
-                <div 
-                  className="flex items-center px-5 py-2 rounded-lg text-gray-600 gap-2.5 cursor-pointer font-medium hover:text-white drop-shadow transition-all"
-                  style={{ backgroundColor: 'rgba(131, 104, 82, 0.1)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#836852'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(131, 104, 82, 0.1)'}
-                >
-                  <RiLogoutCircleLine />
-                  {!smallSidebar && <p>Logout</p>}
-                </div>
+          {/* Logo */}
+          <div className="mb-4">
+            {!smallSidebar ? (
+              <Link to="/" className="flex items-center justify-center">
+                {/* w-full + object-contain prevents the image from overflowing the sidebar */}
+                <img src={logo} alt="UnSmoke" className="w-full h-10 object-contain" />
               </Link>
-            </div>
+            ) : (
+              <div className="h-10" />
+            )}
           </div>
 
-          {/* Open and close the sidebar */}
-          <div className="hidden lg:block absolute bg-white top-2.5 -right-5 rounded-lg w-fit border-2 border-black/20 outline-none">
-            <div className="flex items-end justify-end">
-              <button
-                onClick={() => setSmallSidebar((v) => !v)}
-                className="text-xs px-2 py-1.5 hover:opacity-70 transition-opacity"
-                style={{ color: '#836852' }}
-              >
-                {smallSidebar ? <div className=""><GoSidebarCollapse className="size-5" /></div> : <GoSidebarExpand className="size-7" />}
-              </button>
-            </div>
+          {/* Nav items */}
+          <ul className="space-y-1 font-normal text-sm flex-1">
+            {MENU.map((item) => (
+              <SidebarItem
+                key={item.key}
+                item={item}
+                small={smallSidebar}
+                onMenuClose={closeMenu}
+              />
+            ))}
+          </ul>
+
+          {/* Logout — button element, not a div inside an anchor */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className={[
+                "w-full flex items-center gap-3 px-5 py-2.5 rounded-lg",
+                "text-gray-600 font-medium transition-all",
+                "hover:text-white",
+                smallSidebar ? "justify-center" : "",
+              ].join(" ")}
+              style={{ backgroundColor: "rgba(131, 104, 82, 0.1)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#836852")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(131, 104, 82, 0.1)")}
+            >
+              <RiLogoutCircleLine className="size-5 shrink-0" />
+              {!smallSidebar && <span>Logout</span>}
+            </button>
           </div>
+        </div>
+
+        {/* Collapse toggle (desktop only) */}
+        <div className="hidden lg:block absolute bg-white top-2.5 -right-5 rounded-lg border border-black/20">
+          <button
+            type="button"
+            onClick={() => setSmallSidebar((v) => !v)}
+            className="px-2 py-1.5 hover:opacity-70 transition-opacity"
+            style={{ color: "#836852" }}
+            aria-label={smallSidebar ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {smallSidebar ? (
+              <GoSidebarCollapse className="size-5" />
+            ) : (
+              <GoSidebarExpand className="size-5" />
+            )}
+          </button>
         </div>
       </aside>
     </>

@@ -1,99 +1,61 @@
-import { Route, Routes } from 'react-router-dom'
-import Home from './pages/Home'
-import RootLayout from './layouts/RootLayout'
-import Login from './pages/Login'
-import Profile from './pages/Profile'
-import Faqs from './pages/Faqs'
-import UserFeedBack from './pages/UserFeedBack'
-import TermsAndConditions from './pages/TermsAndConditions'
-import PrivacyPolicy from './pages/PrivacyPolicy'
-import Setting from './pages/Setting'
+import { Route, Routes, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+import RootLayout from "./layouts/RootLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-// Users Management
-import Users from './pages/Users/Users'
-import AllUsers from './pages/Users/AllUsers'
-import UserProfile from './pages/Users/UserProfile'
+import Login from "./pages/Auth/Login";
+import Dashboard from "./pages/Dashboard/Dashboard";
+import Profile from "./pages/Profile/Profile";
+import Faqs from "./pages/Faqs/Faqs";
+import Settings from "./pages/Settings/Settings";
 
-// Streaks & Progress
-import Streaks from './pages/Streaks/Streaks'
+import Users from "./pages/Users/Users";
+import AllUsers from "./pages/Users/AllUsers";
+import UserProfile from "./pages/Users/UserProfile";
 
-// Rewards & Medals
-import Rewards from './pages/Rewards/Rewards'
-
-// Challenges
-import Challenges from './pages/Challenges/Challenges'
-
-// Community
-import Community from './pages/Community/Community'
-
-// Analytics
-import Analytics from './pages/Analytics/Analytics'
+import Streaks from "./pages/Streaks/Streaks";
+import Rewards from "./pages/Rewards/Rewards";
+import Challenges from "./pages/Challenges/Challenges";
+import ChallengeDetail from "./pages/Challenges/ChallengeDetail";
+import Community from "./pages/Community/Community";
+import Analytics from "./pages/Analytics/Analytics";
+import Milestones from "./pages/Milestones/Milestones";
 
 function App() {
+  const { isAuthenticated } = useAuth();
+
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<RootLayout />} >
-          {/* Dashboard */}
-          <Route index element={<Home />} />
-          
-          {/* Users Management */}
-          <Route path='users' element={<Users />} />
-          <Route path='users/all' element={<AllUsers />} />
-          <Route path='users/active' element={<AllUsers />} />
-          <Route path='users/banned' element={<AllUsers />} />
-          <Route path='users/activity' element={<AllUsers />} />
-          <Route path='users/profile/:id' element={<UserProfile />} />
-          
-          {/* Streaks & Progress */}
-          <Route path='streaks' element={<Streaks />} />
-          <Route path='streaks/overview' element={<Streaks />} />
-          <Route path='streaks/longest' element={<Streaks />} />
-          <Route path='streaks/broken' element={<Streaks />} />
-          <Route path='streaks/daily-logs' element={<Streaks />} />
-          
-          {/* Rewards & Medals */}
-          <Route path='rewards' element={<Rewards />} />
-          <Route path='rewards/medals' element={<Rewards />} />
-          <Route path='rewards/create' element={<Rewards />} />
-          <Route path='rewards/stats' element={<Rewards />} />
-          <Route path='rewards/achievements' element={<Rewards />} />
-          
-          {/* Challenges */}
-          <Route path='challenges' element={<Challenges />} />
-          <Route path='challenges/all' element={<Challenges />} />
-          <Route path='challenges/active' element={<Challenges />} />
-          <Route path='challenges/templates' element={<Challenges />} />
-          <Route path='challenges/moderation' element={<Challenges />} />
-          
-          {/* Community */}
-          <Route path='community' element={<Community />} />
-          <Route path='community/posts' element={<Community />} />
-          <Route path='community/reported' element={<Community />} />
-          <Route path='community/moderation' element={<Community />} />
-          <Route path='community/feedback' element={<UserFeedBack />} />
-          
-          {/* Analytics */}
-          <Route path='analytics' element={<Analytics />} />
-          <Route path='analytics/usage' element={<Analytics />} />
-          <Route path='analytics/engagement' element={<Analytics />} />
-          <Route path='analytics/success' element={<Analytics />} />
-          <Route path='analytics/reports' element={<Analytics />} />
-          
-          {/* Settings & Others */}
-          <Route path='faqs' element={<Faqs />} />
-          <Route path='setting' element={<Setting />} />
-          <Route path='setting/app' element={<Setting />} />
-          <Route path='setting/privacy' element={<PrivacyPolicy />} />
-          <Route path='setting/terms' element={<TermsAndConditions />} />
-          <Route path='setting/notifications' element={<Setting />} />
-          <Route path='profile' element={<Profile />} />
+    <Routes>
+      {/* Public route — redirect to dashboard if already logged in */}
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+      />
+
+      {/* All private routes are protected */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<RootLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="users" element={<Users />} />
+          <Route path="users/all" element={<AllUsers />} />
+          <Route path="users/profile/:id" element={<UserProfile />} />
+          <Route path="streaks" element={<Streaks />} />
+          <Route path="rewards" element={<Rewards />} />
+          <Route path="challenges" element={<Challenges />} />
+          <Route path="challenges/:id" element={<ChallengeDetail />} />
+          <Route path="community" element={<Community />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="milestones" element={<Milestones />} />
+          <Route path="faqs" element={<Faqs />} />
+          <Route path="setting" element={<Settings />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
-        
-        <Route path='/login' element={<Login />} />
-      </Routes>
-    </>
-  )
+      </Route>
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 }
 
-export default App
+export default App;
