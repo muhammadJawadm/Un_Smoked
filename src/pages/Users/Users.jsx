@@ -73,7 +73,7 @@ export default function Users() {
     `/admin/users?page=${apiPage}&limit=20`
   );
 
-  const users      = data?.users ?? [];
+  const users= data?.users ?? [];
   const pagination = data?.pagination ?? {};
 
   // client-side filter + search on the fetched page
