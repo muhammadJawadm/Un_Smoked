@@ -4,14 +4,12 @@ import PrivacyPolicy from "./PrivacyPolicy";
 import TermsAndConditions from "./TermsAndConditions";
 import UserFeedback from "./UserFeedback";
 import Contacts from "./Contacts";
-import Notifications from "./Notifications";
 
 const TABS = [
-  { key: "privacy",       label: "Privacy Policy"     },
-  { key: "terms",         label: "Terms & Conditions" },
-  { key: "feedback",      label: "Feedback"           },
-  { key: "contacts",      label: "Contacts"           },
-  { key: "notifications", label: "Notifications"      },
+  { key: "privacy",  label: "Privacy Policy"     },
+  { key: "terms",    label: "Terms & Conditions" },
+  { key: "feedback", label: "Feedback"           },
+  { key: "contacts", label: "Contacts"           },
 ];
 
 export default function Settings() {
@@ -40,11 +38,10 @@ export default function Settings() {
             ))}
           </div>
 
-          {activeTab === "privacy"       && <PrivacyPolicy />}
-          {activeTab === "terms"         && <TermsAndConditions />}
-          {activeTab === "feedback"      && <UserFeedback />}
-          {activeTab === "contacts"      && <Contacts />}
-          {activeTab === "notifications" && <Notifications />}
+          {activeTab === "privacy"  && <PrivacyPolicy />}
+          {activeTab === "terms"    && <TermsAndConditions />}
+          {activeTab === "feedback" && <UserFeedback />}
+          {activeTab === "contacts" && <Contacts />}
         </div>
       </div>
     </div>

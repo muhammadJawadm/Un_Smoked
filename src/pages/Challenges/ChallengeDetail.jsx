@@ -97,7 +97,9 @@ function ParticipantCard({ p }) {
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-1 shrink-0">
+      
+      </div>
+  <div className="flex items-end gap-1 shrink-0">
           {p.role === "creator" ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-yellow-100 text-yellow-700 rounded-full">
               <Crown className="size-3" /> Creator
@@ -107,13 +109,12 @@ function ParticipantCard({ p }) {
               <User className="size-3" /> Participant
             </span>
           )}
+
           <Badge
             label={p.inviteStatus}
             style={INVITE_STYLES[p.inviteStatus] ?? "bg-gray-100 text-gray-600"}
           />
         </div>
-      </div>
-
       {/* Progress row */}
       <div className="grid grid-cols-2 gap-2">
         <StatBox icon={TrendingUp}  iconColor="text-blue-500"   label="Progress"          value={p.progressValue} />

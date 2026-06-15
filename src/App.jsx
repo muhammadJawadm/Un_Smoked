@@ -20,6 +20,7 @@ import ChallengeDetail from "./pages/Challenges/ChallengeDetail";
 import Community from "./pages/Community/Community";
 import Analytics from "./pages/Analytics/Analytics";
 import Milestones from "./pages/Milestones/Milestones";
+import Notifications from "./pages/Notifications/Notifications";
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -46,6 +47,7 @@ function App() {
           <Route path="community" element={<Community />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="milestones" element={<Milestones />} />
+          <Route path="notifications" element={<Notifications />} />
           <Route path="faqs" element={<Faqs />} />
           <Route path="setting" element={<Settings />} />
           <Route path="profile" element={<Profile />} />

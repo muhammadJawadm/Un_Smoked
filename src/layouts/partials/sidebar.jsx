@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Settings,
   Milestone,
+  Bell,
 } from "lucide-react";
 import logo from "../../assets/logo.png";
 
@@ -29,19 +30,19 @@ const ICONS = {
   HelpCircle,
   Settings,
   Milestone,
+  Bell,
 };
 
 const MENU = [
-  { key: "dashboard",   label: "Dashboard",   to: "/",             icon: "RiHome4Line"  },
-  { key: "users",       label: "Users",        to: "/users",        icon: "Users"        },
-  { key: "streaks",     label: "Streaks",      to: "/streaks",      icon: "TrendingUp"   },
-  { key: "rewards",     label: "Rewards",      to: "/rewards",      icon: "Trophy"       },
-  { key: "challenges",  label: "Challenges",   to: "/challenges",   icon: "Target"       },
-  { key: "milestones",  label: "Milestones",   to: "/milestones",   icon: "Milestone"    },
-  { key: "community",   label: "Community",    to: "/community",    icon: "MessageSquare"},
-  { key: "analytics",   label: "Analytics",    to: "/analytics",    icon: "BarChart3"    },
-  { key: "faqs",        label: "FAQs",         to: "/faqs",         icon: "HelpCircle"   },
-  { key: "settings",    label: "Settings",     to: "/setting",      icon: "Settings"     },
+  { key: "dashboard",      label: "Dashboard",      to: "/",               icon: "RiHome4Line"  },
+  { key: "users",          label: "Users",           to: "/users",          icon: "Users"        },
+  { key: "challenges",     label: "Challenges",      to: "/challenges",     icon: "Target"       },
+  { key: "milestones",     label: "Milestones",      to: "/milestones",     icon: "Milestone"    },
+  { key: "community",      label: "Community",       to: "/community",      icon: "MessageSquare"},
+  { key: "analytics",      label: "Analytics",       to: "/analytics",      icon: "BarChart3"    },
+  { key: "notifications",  label: "Notifications",   to: "/notifications",  icon: "Bell"         },
+  { key: "faqs",           label: "FAQs",            to: "/faqs",           icon: "HelpCircle"   },
+  { key: "settings",       label: "Settings",        to: "/setting",        icon: "Settings"     },
 ];
 
 function SidebarItem({ item, small, onMenuClose }) {

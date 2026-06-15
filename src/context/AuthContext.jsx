@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { createContext, useContext, useState, useCallback } from "react";
 import { loginAdmin, persistSession, clearSession, getStoredToken, getStoredUser } from "../services/authService";
 
