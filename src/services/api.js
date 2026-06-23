@@ -14,14 +14,25 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Prevent multiple simultaneous session-expired events firing
+let sessionExpiredFired = false;
+
 // Global response error handler
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    sessionExpiredFired = false; // reset on any successful call
+    return response;
+  },
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    // 401 = invalid/missing token, 403 = often returned for expired JWTs
+    if ((status === 401 || status === 403) && !sessionExpiredFired) {
+      sessionExpiredFired = true;
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      // Notify React via a custom event so AuthContext can clear its state.
+      // ProtectedRoute then redirects to /login via React Router — no hard reload.
+      window.dispatchEvent(new CustomEvent("auth:session-expired"));
     }
     return Promise.reject(error);
   }

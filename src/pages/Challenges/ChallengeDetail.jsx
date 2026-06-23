@@ -242,7 +242,25 @@ export default function ChallengeDetail() {
                     )}
                     {c.winner && (
                       <InfoRow icon={Award} label="Winner">
-                        <span className="text-yellow-600 font-semibold">{c.winner}</span>
+                        {typeof c.winner === "object"
+                          ? (
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {c.winner.profile_picture ? (
+                                <img src={c.winner.profile_picture} alt={c.winner.name}
+                                  className="w-5 h-5 rounded-full object-cover shrink-0" />
+                              ) : (
+                                <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                                  style={{ backgroundColor: "#836852" }}>
+                                  {c.winner.name?.charAt(0).toUpperCase() ?? "?"}
+                                </div>
+                              )}
+                              <span className="text-yellow-600 font-semibold">
+                                {c.winner.name ?? c.winner.email ?? "Unknown"}
+                              </span>
+                            </div>
+                          )
+                          : <span className="text-yellow-600 font-semibold">{c.winner}</span>
+                        }
                       </InfoRow>
                     )}
                   </div>

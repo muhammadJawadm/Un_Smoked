@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { loginAdmin, persistSession, clearSession, getStoredToken, getStoredUser } from "../services/authService";
 
 const AuthContext = createContext(null);
@@ -43,6 +43,18 @@ export function AuthProvider({ children }) {
     clearSession();
     setToken(null);
     setUser(null);
+  }, []);
+
+  // When the axios interceptor fires "auth:session-expired" (expired / invalid token),
+  // clear React state so ProtectedRoute redirects to /login via React Router.
+  useEffect(() => {
+    const handler = () => {
+      clearSession();
+      setToken(null);
+      setUser(null);
+    };
+    window.addEventListener("auth:session-expired", handler);
+    return () => window.removeEventListener("auth:session-expired", handler);
   }, []);
 
   const isAuthenticated = Boolean(token);
