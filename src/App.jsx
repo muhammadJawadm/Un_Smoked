@@ -21,6 +21,7 @@ import Community from "./pages/Community/Community";
 import Analytics from "./pages/Analytics/Analytics";
 import Milestones from "./pages/Milestones/Milestones";
 import Notifications from "./pages/Notifications/Notifications";
+import Badges from "./pages/Badges/Badges";
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -47,6 +48,7 @@ function App() {
           <Route path="community" element={<Community />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="milestones" element={<Milestones />} />
+          <Route path="badges" element={<Badges />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="faqs" element={<Faqs />} />
           <Route path="setting" element={<Settings />} />

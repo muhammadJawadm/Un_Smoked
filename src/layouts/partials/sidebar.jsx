@@ -16,6 +16,7 @@ import {
   Settings,
   Milestone,
   Bell,
+  Award,
 } from "lucide-react";
 import logo from "../../assets/logo.png";
 
@@ -31,6 +32,7 @@ const ICONS = {
   Settings,
   Milestone,
   Bell,
+  Award,
 };
 
 const MENU = [
@@ -38,6 +40,7 @@ const MENU = [
   { key: "users",          label: "Users",           to: "/users",          icon: "Users"        },
   { key: "challenges",     label: "Challenges",      to: "/challenges",     icon: "Target"       },
   { key: "milestones",     label: "Milestones",      to: "/milestones",     icon: "Milestone"    },
+  { key: "badges",         label: "Badges",          to: "/badges",         icon: "Award"        },
   { key: "community",      label: "Community",       to: "/community",      icon: "MessageSquare"},
   { key: "analytics",      label: "Analytics",       to: "/analytics",      icon: "BarChart3"    },
   { key: "notifications",  label: "Notifications",   to: "/notifications",  icon: "Bell"         },

@@ -1,6 +1,9 @@
 /* eslint-disable react/prop-types */
 import { useState, useMemo } from "react";
-import { Search, Award, Calendar, InboxIcon, Plus, X, Trash2 } from "lucide-react";
+import {
+  Search, Award, Calendar, InboxIcon, Plus, X, Trash2,
+  Pencil, CheckCircle, AlertCircle,
+} from "lucide-react";
 import Header from "../../layouts/partials/header";
 import StatCard from "../../components/StatCard";
 import PageLoader from "../../components/PageLoader";
@@ -8,13 +11,17 @@ import PageError from "../../components/PageError";
 import useFetch from "../../hooks/useFetch";
 import api from "../../services/api";
 
-function BadgeImage({ src, title }) {
+// ── Badge image with fallback ─────────────────────────────────────────────────
+
+function BadgeImage({ src, title, size = "md" }) {
   const [broken, setBroken] = useState(false);
+  const dim = size === "sm" ? "w-10 h-10" : "w-16 h-16";
+  const iconSize = size === "sm" ? "size-5" : "size-8";
 
   if (!src || broken) {
     return (
-      <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-        <Award className="size-8 text-amber-500" />
+      <div className={`${dim} rounded-full bg-amber-100 flex items-center justify-center mx-auto ${size === "md" ? "mb-4" : ""}`}>
+        <Award className={`${iconSize} text-amber-500`} />
       </div>
     );
   }
@@ -26,20 +33,118 @@ function BadgeImage({ src, title }) {
       src={url}
       alt={title}
       onError={() => setBroken(true)}
-      className="w-16 h-16 rounded-full object-cover mx-auto mb-4"
+      className={`${dim} rounded-full object-cover mx-auto ${size === "md" ? "mb-4" : ""}`}
     />
   );
 }
 
+// ── Edit Milestone Modal ──────────────────────────────────────────────────────
+
+function EditMilestoneModal({ milestone, onClose, onSaved }) {
+  const [title,       setTitle      ] = useState(milestone.title       ?? "");
+  const [description, setDescription] = useState(milestone.description ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err,  setErr ] = useState(null);
+  const [ok,   setOk  ] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.patch(`/admin/milestones/${milestone._id}`, {
+        title:       title.trim(),
+        description: description.trim(),
+      });
+      setOk(true);
+      setTimeout(() => { onSaved(); onClose(); }, 800);
+    } catch (e) {
+      setErr(e.response?.data?.message ?? e.message ?? "Save failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <Pencil className="size-4 text-[#836852]" />
+            Edit Milestone
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSave} className="px-6 py-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#836852]"
+              placeholder="e.g. First Week Smoke-Free"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#836852] resize-none"
+              placeholder="Describe this milestone..."
+            />
+          </div>
+
+          {err && (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+              <AlertCircle className="size-4 shrink-0" />{err}
+            </div>
+          )}
+          {ok && (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
+              <CheckCircle className="size-4 shrink-0" />Milestone updated successfully.
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-1">
+            <button type="button" onClick={onClose} disabled={busy}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">
+              Cancel
+            </button>
+            <button type="submit" disabled={busy || !title.trim()}
+              className="px-5 py-2 text-sm font-medium text-white rounded-lg hover:opacity-80 disabled:opacity-50"
+              style={{ backgroundColor: "#836852" }}>
+              {busy ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function Milestones() {
-  const [search,      setSearch     ] = useState("");
-  const [showAdd,     setShowAdd    ] = useState(false);
-  const [form,        setForm       ] = useState({ title: "", description: "", badge_image: "" });
-  const [addBusy,     setAddBusy    ] = useState(false);
-  const [addErr,      setAddErr     ] = useState(null);
-  const [deleteId,    setDeleteId   ] = useState(null);
-  const [deleteBusy,  setDeleteBusy ] = useState(false);
-  const [deleteErr,   setDeleteErr  ] = useState(null);
+  const [search,         setSearch        ] = useState("");
+  const [showAdd,        setShowAdd       ] = useState(false);
+  const [form,           setForm          ] = useState({ title: "", description: "", badge_image: "" });
+  const [addBusy,        setAddBusy       ] = useState(false);
+  const [addErr,         setAddErr        ] = useState(null);
+  const [deleteId,       setDeleteId      ] = useState(null);
+  const [deleteBusy,     setDeleteBusy    ] = useState(false);
+  const [deleteErr,      setDeleteErr     ] = useState(null);
+  const [editMilestone,  setEditMilestone ] = useState(null); // milestone object being edited
 
   const { data, loading, error, refetch } = useFetch("/admin/milestones");
 
@@ -146,14 +251,23 @@ export default function Milestones() {
                   key={m._id}
                   className="bg-white rounded-xl shadow border border-gray-100 p-6 flex flex-col items-center text-center hover:shadow-md transition-shadow relative group"
                 >
-                  {/* Delete button — visible on hover */}
-                  <button
-                    onClick={() => { setDeleteErr(null); setDeleteId(m._id); }}
-                    className="absolute top-3 right-3 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Delete milestone"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                  {/* Action buttons — visible on hover */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setEditMilestone(m)}
+                      className="p-1.5 text-gray-400 hover:text-[#836852] hover:bg-[#f5f0eb] rounded-lg"
+                      title="Edit milestone"
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    <button
+                      onClick={() => { setDeleteErr(null); setDeleteId(m._id); }}
+                      className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                      title="Delete milestone"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
 
                   <BadgeImage src={m.badge_image} title={m.title} />
 
@@ -171,6 +285,15 @@ export default function Milestones() {
 
         </div>
       </div>
+
+      {/* Edit Milestone modal */}
+      {editMilestone && (
+        <EditMilestoneModal
+          milestone={editMilestone}
+          onClose={() => setEditMilestone(null)}
+          onSaved={refetch}
+        />
+      )}
 
       {/* Add Milestone modal */}
       {showAdd && (
