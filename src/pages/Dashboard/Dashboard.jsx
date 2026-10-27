@@ -34,7 +34,7 @@ export default function Dashboard() {
     { label: "Post Reports",    value: s.postReports.total,    sub: "need review",                   icon: Flag,         iconBg: "bg-red-100",    iconColor: "text-red-600",    to: "/community" },
     { label: "Pending Contacts",value: s.contacts.pending,     sub: `${s.contacts.total} total`,     icon: Mail,         iconBg: "bg-orange-100", iconColor: "text-orange-600", to: "/setting"   },
     { label: "Feedback",        value: s.feedback.total,       sub: "received",                      icon: ThumbsUp,     iconBg: "bg-pink-100",   iconColor: "text-pink-600",   to: "/setting"   },
-    { label: "Notifications",   value: s.notifications.total,  sub: "sent",                          icon: Bell,         iconBg: "bg-teal-100",   iconColor: "text-teal-600",   to: "/setting"   },
+    { label: "Notifications",   value: s.notifications.total,  sub: "sent",                          icon: Bell,         iconBg: "bg-teal-100",   iconColor: "text-teal-600",   to: "/notifications"   },
     { label: "Comments",        value: s.comments.total,       sub: "on posts",                      icon: MessageSquare,iconBg: "bg-cyan-100",   iconColor: "text-cyan-600",   to: "/community" },
   ];
 

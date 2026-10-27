@@ -11,6 +11,7 @@ import PageLoader from "../../components/PageLoader";
 import PageError from "../../components/PageError";
 import useFetch from "../../hooks/useFetch";
 import api from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -145,6 +146,7 @@ export default function ChallengeDetail() {
 
   const [modBusy, setModBusy] = useState(false);
   const [modErr,  setModErr ] = useState(null);
+  const toast = useToast();
 
   const { data, loading, error, refetch } = useFetch(`/admin/challenges/${id}`);
 
@@ -157,9 +159,16 @@ export default function ChallengeDetail() {
     setModErr(null);
     try {
       await api.patch(`/admin/challenges/${id}/moderate`, { moderationStatus });
+      toast.success(
+        moderationStatus === "ok"
+          ? "Challenge marked as OK successfully."
+          : "Challenge removed successfully."
+      );
       await refetch();
     } catch (e) {
-      setModErr(e.response?.data?.message ?? e.message ?? "Action failed.");
+      const message = e.response?.data?.message ?? e.message ?? "Action failed.";
+      setModErr(message);
+      toast.error(message);
     } finally {
       setModBusy(false);
     }
@@ -290,6 +299,9 @@ export default function ChallengeDetail() {
                 {/* Moderation card */}
                 <div className="bg-white rounded-xl shadow p-5 space-y-3">
                   <h3 className="text-sm font-semibold text-gray-500 uppercase">Moderation</h3>
+                  <p className="text-xs text-gray-400 -mt-2">
+                    Review this challenge&apos;s content and mark it OK to keep it visible, or Remove it if it violates guidelines.
+                  </p>
                   <div className="flex items-center gap-2">
                     <Badge
                       label={c.moderationStatus}

@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from "react";
-import { X, User, Mail, Phone, Shield, Calendar, CheckCircle, AlertCircle } from "lucide-react";
+import { User, Mail, Phone, Shield, Calendar, CheckCircle, AlertCircle } from "lucide-react";
 import Header from "../../layouts/partials/header";
 import PageLoader from "../../components/PageLoader";
 import PageError from "../../components/PageError";
@@ -171,11 +171,8 @@ export default function Profile() {
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+            <div className="px-6 py-4 border-b">
               <h2 className="text-lg font-semibold text-gray-800">Edit Profile</h2>
-              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="size-5" />
-              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">

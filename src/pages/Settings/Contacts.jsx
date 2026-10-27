@@ -1,11 +1,12 @@
 /* eslint-disable react/prop-types */
 import { useState, useMemo } from "react";
-import { Search, Mail, Clock, CheckCircle, X, Filter } from "lucide-react";
+import { Search, Mail, Clock, CheckCircle, Filter } from "lucide-react";
 import StatCard from "../../components/StatCard";
 import PageLoader from "../../components/PageLoader";
 import PageError from "../../components/PageError";
 import useFetch from "../../hooks/useFetch";
 import api from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -67,6 +68,7 @@ export default function Contacts() {
   const [respondBusy,  setRespondBusy ] = useState(false);
   const [respondErr,   setRespondErr  ] = useState(null);
 
+  const toast = useToast();
   const { data, loading, error, refetch } = useFetch("/admin/contacts");
 
   const contactsRaw = data?.contacts;
@@ -101,10 +103,13 @@ export default function Contacts() {
     setRespondErr(null);
     try {
       await api.patch(`/admin/contacts/${selected._id}/respond`, { response: responseText.trim() });
+      toast.success("Response sent successfully.");
       await refetch();
       setSelected(null);
     } catch (err) {
-      setRespondErr(err.response?.data?.message ?? err.message ?? "Failed to send response.");
+      const message = err.response?.data?.message ?? err.message ?? "Failed to send response.";
+      setRespondErr(message);
+      toast.error(message);
     } finally {
       setRespondBusy(false);
     }
@@ -207,11 +212,8 @@ export default function Contacts() {
       {selected && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+            <div className="px-6 py-4 border-b">
               <h2 className="text-lg font-semibold text-gray-800">Contact Details</h2>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">
-                <X className="size-5" />
-              </button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>

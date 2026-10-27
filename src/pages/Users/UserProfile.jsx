@@ -12,6 +12,7 @@ import PageLoader from "../../components/PageLoader";
 import PageError from "../../components/PageError";
 import useFetch from "../../hooks/useFetch";
 import api from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 // ── small helpers ──────────────────────────────────────────────────────────────
 
@@ -67,6 +68,7 @@ export default function UserProfile() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
 
+  const toast = useToast();
   const { data, loading, error, refetch } = useFetch(`/admin/users/${id}`);
 
   const user       = data?.user       ?? null;
@@ -75,26 +77,37 @@ export default function UserProfile() {
   const milestones = data?.milestones ?? [];
   const stats      = data?.stats      ?? {};
 
-  const runAction = async (fn) => {
+  const runAction = async (fn, successMessage) => {
     setActionBusy(true);
     setActionErr(null);
-    try { await fn(); await refetch(); }
-    catch (e) { setActionErr(e.response?.data?.message ?? e.message ?? "Action failed."); }
-    finally   { setActionBusy(false); }
+    try {
+      await fn();
+      if (successMessage) toast.success(successMessage);
+      await refetch();
+    } catch (e) {
+      const message = e.response?.data?.message ?? e.message ?? "Action failed.";
+      setActionErr(message);
+      toast.error(message);
+    } finally {
+      setActionBusy(false);
+    }
   };
 
-  const toggleStatus = () => runAction(() => api.patch(`/admin/users/${id}/toggle-status`));
+  const toggleStatus = () => runAction(
+    () => api.patch(`/admin/users/${id}/toggle-status`),
+    user?.is_active ? "User deactivated successfully." : "User activated successfully."
+  );
 
   const changeRole = (role) => runAction(async () => {
     await api.patch(`/admin/users/${id}/change-role`, { role });
     setRoleModal(false);
-  });
+  }, "User role updated successfully.");
 
   const deleteUser = () => runAction(async () => {
     await api.delete(`/admin/users/${id}`);
     setDeleteModal(false);
     navigate("/users");
-  });
+  }, "User deleted successfully.");
 
   return (
     <div>
@@ -256,7 +269,7 @@ export default function UserProfile() {
                     {[
                       { label: "Cigarettes/Day", value: user.cigarettes_per_day,              unit: "cigs" },
                       { label: "Pack size",       value: user.amount_of_cigarettes_per_pack,  unit: "pcs"  },
-                      { label: "Cost per pack",   value: user.cost ? `${user.cost}/${user.per}` : null, unit: "" },
+                      { label: "Cost per pack",   value: user.cost ? `$${user.cost}/${user.per}` : null, unit: "USD" },
                       { label: "Health Goal",     value: user.health_goal,                    unit: ""     },
                     ].map(({ label, value, unit }) => (
                       <div key={label} className="rounded-lg border border-gray-100 p-4">

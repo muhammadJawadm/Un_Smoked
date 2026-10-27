@@ -1,8 +1,9 @@
 /* eslint-disable react/prop-types */
 import { useState, useMemo, useRef } from "react";
 import {
-  Award, Plus, X, CheckCircle, AlertCircle, ImageIcon,
+  Award, Plus, CheckCircle, AlertCircle, ImageIcon,
   Search, InboxIcon, Calendar, Flame, Trophy, Shield, Zap,
+  Pencil, Trash2,
 } from "lucide-react";
 import Header from "../../layouts/partials/header";
 import PageLoader from "../../components/PageLoader";
@@ -10,6 +11,7 @@ import PageError from "../../components/PageError";
 import StatCard from "../../components/StatCard";
 import useFetch from "../../hooks/useFetch";
 import api from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -87,6 +89,7 @@ function AddBadgeModal({ onClose, onCreated }) {
   // Submit state
   const [busy, setBusy] = useState(false);
   const [err,  setErr ] = useState(null);
+  const toast = useToast();
 
   // ── Step 1: upload on file select ───────────────────────────────────────────
   const handleFileChange = async (e) => {
@@ -133,10 +136,13 @@ function AddBadgeModal({ onClose, onCreated }) {
         conditionValue: conditionValue !== "" ? Number(conditionValue) : undefined,
         isActive,
       });
+      toast.success("Badge created successfully.");
       onCreated();
       onClose();
     } catch (e) {
-      setErr(e.response?.data?.message ?? e.message ?? "Failed to create badge.");
+      const message = e.response?.data?.message ?? e.message ?? "Failed to create badge.";
+      setErr(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -147,14 +153,11 @@ function AddBadgeModal({ onClose, onCreated }) {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[94vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
+        <div className="px-6 py-4 border-b shrink-0">
           <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
             <Award className="size-5 text-[#836852]" />
             Add Badge Template
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="size-5" />
-          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
@@ -309,9 +312,9 @@ function AddBadgeModal({ onClose, onCreated }) {
                   type="button"
                   onClick={() => setIsActive((v) => !v)}
                   disabled={!uploadOk}
-                  className={`relative w-10 h-5 rounded-full transition-colors shrink-0 disabled:opacity-40 ${isActive ? "bg-[#836852]" : "bg-gray-300"}`}
+                  className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-40 ${isActive ? "bg-[#836852]" : "bg-gray-300"}`}
                 >
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isActive ? "translate-x-5" : "translate-x-0.5"}`} />
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isActive ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
               </div>
 
@@ -378,11 +381,267 @@ function AddBadgeModal({ onClose, onCreated }) {
   );
 }
 
+// ── Edit Badge Modal ──────────────────────────────────────────────────────────
+
+function EditBadgeModal({ badge, onClose, onSaved }) {
+  const fileRef = useRef(null);
+  const toast = useToast();
+
+  const [previewUrl, setPreviewUrl] = useState(badge.imageUrl ?? null);
+  const [imageUrl,   setImageUrl  ] = useState(badge.imageUrl ?? "");
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadErr,  setUploadErr ] = useState(null);
+
+  const [title,          setTitle         ] = useState(badge.title ?? "");
+  const [description,    setDescription   ] = useState(badge.description ?? "");
+  const [type,           setType          ] = useState(badge.type ?? "streak");
+  const [conditionValue, setConditionValue] = useState(badge.conditionValue ?? "");
+  const [isActive,       setIsActive      ] = useState(badge.isActive ?? true);
+
+  const [busy, setBusy] = useState(false);
+  const [err,  setErr ] = useState(null);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPreviewUrl(URL.createObjectURL(file));
+    setUploadErr(null);
+    setUploadBusy(true);
+
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const { data } = await api.post("/badges/upload-image", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setImageUrl(data.imageUrl ?? data.url ?? "");
+    } catch (e) {
+      setUploadErr(e.response?.data?.message ?? e.message ?? "Image upload failed.");
+      setPreviewUrl(badge.imageUrl ?? null);
+      setImageUrl(badge.imageUrl ?? "");
+    } finally {
+      setUploadBusy(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!imageUrl) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.patch(`/badges/templates/${badge._id}`, {
+        title:          title.trim(),
+        description:    description.trim() || undefined,
+        imageUrl,
+        type,
+        conditionValue: conditionValue !== "" ? Number(conditionValue) : undefined,
+        isActive,
+      });
+      toast.success("Badge updated successfully.");
+      onSaved();
+      onClose();
+    } catch (e) {
+      const message = e.response?.data?.message ?? e.message ?? "Failed to update badge.";
+      setErr(message);
+      toast.error(message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[94vh] flex flex-col">
+
+        <div className="px-6 py-4 border-b shrink-0">
+          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <Pencil className="size-5 text-[#836852]" />
+            Edit Badge Template
+          </h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
+          <div className="px-6 py-5 space-y-6">
+
+            {/* Image */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-700">Badge Image</h3>
+
+              <div
+                onClick={() => !uploadBusy && fileRef.current?.click()}
+                className="relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors border-gray-200 hover:border-[#836852] hover:bg-[#f9f6f3]"
+              >
+                {previewUrl ? (
+                  <>
+                    <img src={previewUrl} alt="preview"
+                      className="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow" />
+                    <p className="text-xs text-gray-400">
+                      {uploadBusy ? "Uploading to Cloudinary…" : "Click to change image"}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
+                      <ImageIcon className="size-7 text-gray-400" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-700">Click to upload badge image</p>
+                  </>
+                )}
+
+                {uploadBusy && (
+                  <div className="absolute inset-0 bg-white/75 rounded-xl flex flex-col items-center justify-center gap-2">
+                    <div className="w-7 h-7 border-4 border-[#836852] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs text-gray-500">Uploading…</p>
+                  </div>
+                )}
+              </div>
+
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+
+              {uploadErr && (
+                <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                  <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
+                  {uploadErr}
+                </div>
+              )}
+            </div>
+
+            {/* Details */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#836852]"
+                  placeholder="e.g. 7-Day Streak"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#836852] resize-none"
+                  placeholder="Awarded for staying smoke-free for 7 consecutive days"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#836852] bg-white"
+                  >
+                    <option value="streak">Streak</option>
+                    <option value="completion">Completion</option>
+                    <option value="milestone">Milestone</option>
+                    <option value="competition">Competition</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Condition Value <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={conditionValue}
+                    onChange={(e) => setConditionValue(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#836852]"
+                    placeholder="e.g. 7"
+                  />
+                </div>
+              </div>
+
+              {/* isActive toggle */}
+              <div className="flex items-center justify-between py-2 border border-gray-100 rounded-lg px-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Active</p>
+                  <p className="text-xs text-gray-400">Badge is available to be awarded</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsActive((v) => !v)}
+                  className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${isActive ? "bg-[#836852]" : "bg-gray-300"}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isActive ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+            </div>
+
+            {err && (
+              <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                {err}
+              </div>
+            )}
+          </div>
+
+          <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 shrink-0 rounded-b-xl">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={busy || uploadBusy}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={busy || uploadBusy || !imageUrl || !title.trim() || conditionValue === ""}
+              className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white rounded-lg hover:opacity-80 disabled:opacity-40"
+              style={{ backgroundColor: "#836852" }}
+            >
+              {busy ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Badge Card ────────────────────────────────────────────────────────────────
 
-function BadgeCard({ badge }) {
+function BadgeCard({ badge, onEdit, onDelete }) {
   return (
-    <div className="bg-white rounded-xl shadow border border-gray-100 p-5 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+    <div className="relative bg-white rounded-xl shadow border border-gray-100 p-5 flex flex-col items-center text-center hover:shadow-md transition-shadow group">
+
+      {/* Action buttons — visible on hover */}
+      <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => onEdit(badge)}
+          className="p-1.5 text-gray-400 hover:text-[#836852] hover:bg-[#f5f0eb] rounded-lg"
+          title="Edit badge"
+        >
+          <Pencil className="size-3.5" />
+        </button>
+        <button
+          onClick={() => onDelete(badge)}
+          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg"
+          title="Delete badge"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      </div>
+
       <BadgeImg src={badge.imageUrl} title={badge.title} className="w-16 h-16 mb-3" />
 
       <h3 className="text-sm font-bold text-gray-900 mb-1 leading-snug">{badge.title}</h3>
@@ -425,6 +684,11 @@ export default function Badges() {
   const [search,      setSearch     ] = useState("");
   const [typeFilter,  setTypeFilter ] = useState("all");
   const [activeFilter,setActiveFilter] = useState("all"); // "all" | "active" | "inactive"
+  const [editBadge,   setEditBadge  ] = useState(null); // badge object being edited
+  const [deleteBadge, setDeleteBadge] = useState(null); // badge object pending delete
+  const [deleteBusy,  setDeleteBusy ] = useState(false);
+  const [deleteErr,   setDeleteErr  ] = useState(null);
+  const toast = useToast();
 
   const { data, loading, error, refetch } = useFetch("/badges/templates");
 
@@ -446,6 +710,23 @@ export default function Badges() {
   const allItems   = templatesRaw ?? [];
   const totalCount  = allItems.length;
   const activeCount = allItems.filter((b) => b.isActive).length;
+
+  const handleDeleteBadge = async () => {
+    setDeleteBusy(true);
+    setDeleteErr(null);
+    try {
+      await api.delete(`/badges/templates/${deleteBadge._id}`);
+      setDeleteBadge(null);
+      toast.success("Badge deleted successfully.");
+      await refetch();
+    } catch (err) {
+      const message = err.response?.data?.message ?? err.message ?? "Delete failed.";
+      setDeleteErr(message);
+      toast.error(message);
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   return (
     <div>
@@ -554,7 +835,12 @@ export default function Badges() {
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {templates.map((b) => (
-                  <BadgeCard key={b._id} badge={b} />
+                  <BadgeCard
+                    key={b._id}
+                    badge={b}
+                    onEdit={(badge) => setEditBadge(badge)}
+                    onDelete={(badge) => { setDeleteErr(null); setDeleteBadge(badge); }}
+                  />
                 ))}
               </div>
             </>
@@ -568,6 +854,50 @@ export default function Badges() {
           onClose={() => setShowAdd(false)}
           onCreated={refetch}
         />
+      )}
+
+      {editBadge && (
+        <EditBadgeModal
+          badge={editBadge}
+          onClose={() => setEditBadge(null)}
+          onSaved={refetch}
+        />
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteBadge && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <Trash2 className="size-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Delete Badge</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone.</p>
+              </div>
+            </div>
+            {deleteErr && (
+              <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{deleteErr}</p>
+            )}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteBadge(null)}
+                disabled={deleteBusy}
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteBadge}
+                disabled={deleteBusy}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleteBusy ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

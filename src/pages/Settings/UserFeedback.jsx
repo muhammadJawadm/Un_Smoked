@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useState, useMemo } from "react";
-import { Search, Star, X, MessageSquare, ThumbsUp } from "lucide-react";
+import { Search, Star, MessageSquare, ThumbsUp } from "lucide-react";
 import StatCard from "../../components/StatCard";
 import PageLoader from "../../components/PageLoader";
 import PageError from "../../components/PageError";
@@ -163,11 +163,8 @@ export default function UserFeedback() {
       {selected && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+            <div className="px-6 py-4 border-b">
               <h2 className="text-lg font-semibold text-gray-800">Feedback Details</h2>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">
-                <X className="size-5" />
-              </button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>

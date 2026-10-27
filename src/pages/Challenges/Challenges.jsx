@@ -12,12 +12,16 @@ import {
   ChevronLeft,
   ChevronRight,
   InboxIcon,
+  Plus,
+  AlertCircle,
 } from "lucide-react";
 import Header from "../../layouts/partials/header";
 import StatCard from "../../components/StatCard";
 import PageLoader from "../../components/PageLoader";
 import PageError from "../../components/PageError";
 import useFetch from "../../hooks/useFetch";
+import api from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -109,7 +113,7 @@ function ChallengesTab() {
     return challenges.filter((c) => {
       const matchSearch =
         !q ||
-        c.title.toLowerCase().includes(q) ||
+        (c.title ?? "").toLowerCase().includes(q) ||
         (c.createdBy?.name  ?? "").toLowerCase().includes(q) ||
         (c.category?.name   ?? "").toLowerCase().includes(q);
 
@@ -289,16 +293,148 @@ function ChallengesTab() {
   );
 }
 
+// ── Add Template Modal ───────────────────────────────────────────────────────────
+
+const DIFFICULTY_OPTIONS = ["easy", "medium", "hard"];
+
+function AddTemplateModal({ categories, onClose, onCreated }) {
+  const toast = useToast();
+  const [title,      setTitle     ] = useState("");
+  const [category,   setCategory  ] = useState("");
+  const [difficulty, setDifficulty] = useState("easy");
+  const [busy, setBusy] = useState(false);
+  const [err,  setErr ] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!title.trim() || !category) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.post("/challenge-templates", {
+        title: title.trim(),
+        category,
+        difficulty,
+      });
+      toast.success("Template created successfully.");
+      onCreated();
+      onClose();
+    } catch (e) {
+      const message = e.response?.data?.message ?? e.message ?? "Failed to create template.";
+      setErr(message);
+      toast.error(message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="px-6 py-4 border-b">
+          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <Layers className="size-4 text-[#836852]" />
+            Add Challenge Template
+          </h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Title <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#836852]"
+              placeholder="e.g. 24 Hour Challenge"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category <span className="text-red-400">*</span>
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#836852] bg-white"
+            >
+              <option value="" disabled>Select a category…</option>
+              {categories.map((c) => (
+                <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+            {categories.length === 0 && (
+              <p className="text-xs text-gray-400 mt-1">
+                No categories found yet — create a challenge with a category first.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Difficulty <span className="text-red-400">*</span>
+            </label>
+            <select
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#836852] bg-white capitalize"
+            >
+              {DIFFICULTY_OPTIONS.map((d) => (
+                <option key={d} value={d} className="capitalize">{d}</option>
+              ))}
+            </select>
+          </div>
+
+          {err && (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+              <AlertCircle className="size-4 shrink-0" />{err}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-1">
+            <button type="button" onClick={onClose} disabled={busy}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">
+              Cancel
+            </button>
+            <button type="submit" disabled={busy || !title.trim() || !category}
+              className="px-5 py-2 text-sm font-medium text-white rounded-lg hover:opacity-80 disabled:opacity-50"
+              style={{ backgroundColor: "#836852" }}>
+              {busy ? "Creating…" : "Create Template"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Templates tab ──────────────────────────────────────────────────────────────
 
 function TemplatesTab() {
-  const [search, setSearch] = useState("");
-  const [local,  setLocal ] = useState(1);
+  const [search,  setSearch ] = useState("");
+  const [local,   setLocal  ] = useState(1);
+  const [showAdd, setShowAdd] = useState(false);
 
   const { data, loading, error, refetch } = useFetch("/admin/challenge-templates");
+  const { data: challengesData } = useFetch("/admin/challenges");
 
   const templates  = data?.templates  ?? [];
   const pagination = data?.pagination ?? {};
+
+  const categories = useMemo(() => {
+    const all = [
+      ...templates.map((t) => t.category),
+      ...((challengesData?.challenges ?? []).map((c) => c.category)),
+    ].filter(Boolean);
+    const byId = new Map(all.map((c) => [c._id, c]));
+    return Array.from(byId.values());
+  }, [templates, challengesData]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -317,25 +453,52 @@ function TemplatesTab() {
 
   if (pagination.total === 0) {
     return (
-      <div className="bg-white rounded-xl shadow flex flex-col items-center justify-center py-20 text-center">
-        <InboxIcon className="size-12 text-gray-300 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-500 mb-1">No Templates Yet</h3>
-        <p className="text-sm text-gray-400">Challenge templates will appear here once created.</p>
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-80 transition-opacity"
+            style={{ backgroundColor: "#836852" }}
+          >
+            <Plus className="size-4" /> Add Template
+          </button>
+        </div>
+        <div className="bg-white rounded-xl shadow flex flex-col items-center justify-center py-20 text-center">
+          <InboxIcon className="size-12 text-gray-300 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-500 mb-1">No Templates Yet</h3>
+          <p className="text-sm text-gray-400">Challenge templates will appear here once created.</p>
+        </div>
+        {showAdd && (
+          <AddTemplateModal
+            categories={categories}
+            onClose={() => setShowAdd(false)}
+            onCreated={refetch}
+          />
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search templates..."
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setLocal(1); }}
-          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#836852]"
-        />
+      <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        <div className="relative max-w-sm w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search templates..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setLocal(1); }}
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#836852]"
+          />
+        </div>
+        <button
+          onClick={() => setShowAdd(true)}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-80 transition-opacity shrink-0"
+          style={{ backgroundColor: "#836852" }}
+        >
+          <Plus className="size-4" /> Add Template
+        </button>
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -405,6 +568,14 @@ function TemplatesTab() {
           </div>
         </div>
       </div>
+
+      {showAdd && (
+        <AddTemplateModal
+          categories={categories}
+          onClose={() => setShowAdd(false)}
+          onCreated={refetch}
+        />
+      )}
     </div>
   );
 }

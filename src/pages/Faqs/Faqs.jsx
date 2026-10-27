@@ -6,7 +6,8 @@ import PageLoader from "../../components/PageLoader";
 import PageError from "../../components/PageError";
 import useFetch from "../../hooks/useFetch";
 import api from "../../services/api";
-import { Search, Plus, X, HelpCircle, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { useToast } from "../../context/ToastContext";
+import { Search, Plus, HelpCircle, CheckCircle, XCircle, Trash2 } from "lucide-react";
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -27,13 +28,14 @@ function ActiveBadge({ value }) {
 export default function Faqs() {
   const [searchQuery, setSearchQuery] = useState("");
   const [modal,       setModal      ] = useState({ open: false, mode: "view", faq: null });
-  const [formData,    setForm       ] = useState({ question: "", answer: "" });
+  const [formData,    setForm       ] = useState({ question: "", answer: "", categoryId: "" });
   const [busy,        setBusy       ] = useState(false);
   const [formErr,     setFormErr    ] = useState(null);
   const [deleteId,    setDeleteId   ] = useState(null);
   const [deleteBusy,  setDeleteBusy ] = useState(false);
   const [deleteErr,   setDeleteErr  ] = useState(null);
 
+  const toast = useToast();
   const { data, loading, error, refetch } = useFetch("/admin/faqs");
 
   const faqsRaw  = data?.faqs;
@@ -54,19 +56,25 @@ export default function Faqs() {
   const active  = faqs.filter((f) => f.is_active).length;
   const inactive = faqs.filter((f) => !f.is_active).length;
 
+  const categories = useMemo(() => {
+    const byId = new Map();
+    faqs.forEach((f) => { if (f.categoryId?._id) byId.set(f.categoryId._id, f.categoryId); });
+    return Array.from(byId.values());
+  }, [faqs]);
+
   const openView = (faq) => {
-    setForm({ question: faq.question, answer: faq.answer });
+    setForm({ question: faq.question, answer: faq.answer, categoryId: faq.categoryId?._id ?? "" });
     setModal({ open: true, mode: "view", faq });
   };
 
   const openEdit = (faq) => {
-    setForm({ question: faq.question, answer: faq.answer });
+    setForm({ question: faq.question, answer: faq.answer, categoryId: faq.categoryId?._id ?? "" });
     setFormErr(null);
     setModal({ open: true, mode: "edit", faq });
   };
 
   const openAdd = () => {
-    setForm({ question: "", answer: "" });
+    setForm({ question: "", answer: "", categoryId: categories[0]?._id ?? "" });
     setFormErr(null);
     setModal({ open: true, mode: "add", faq: null });
   };
@@ -80,13 +88,17 @@ export default function Faqs() {
     try {
       if (modal.mode === "add") {
         await api.post("/admin/faqs", formData);
+        toast.success("FAQ created successfully.");
       } else {
         await api.put(`/admin/faqs/${modal.faq._id}`, formData);
+        toast.success("FAQ updated successfully.");
       }
       await refetch();
       closeModal();
     } catch (err) {
-      setFormErr(err.response?.data?.message ?? err.message ?? "Something went wrong.");
+      const message = err.response?.data?.message ?? err.message ?? "Something went wrong.";
+      setFormErr(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -98,9 +110,12 @@ export default function Faqs() {
     try {
       await api.delete(`/admin/faqs/${deleteId}`);
       setDeleteId(null);
+      toast.success("FAQ deleted successfully.");
       await refetch();
     } catch (err) {
-      setDeleteErr(err.response?.data?.message ?? err.message ?? "Delete failed.");
+      const message = err.response?.data?.message ?? err.message ?? "Delete failed.";
+      setDeleteErr(message);
+      toast.error(message);
     } finally {
       setDeleteBusy(false);
     }
@@ -229,27 +244,40 @@ export default function Faqs() {
       {modal.open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+            <div className="px-6 py-4 border-b">
               <h2 className="text-lg font-semibold text-gray-800">
                 {modal.mode === "view" ? "View FAQ"
                   : modal.mode === "edit" ? "Edit FAQ"
                   : "Add New FAQ"}
               </h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
-                <X className="size-5" />
-              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
-              {/* Category (view only) */}
-              {modal.mode === "view" && modal.faq?.categoryId && (
-                <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase mb-1">Category</p>
-                  <span className="px-3 py-1 text-sm bg-teal-50 text-teal-700 rounded-full">
-                    {modal.faq.categoryId.name}
-                  </span>
-                </div>
-              )}
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                {modal.mode === "view" ? (
+                  modal.faq?.categoryId ? (
+                    <span className="px-3 py-1 text-sm bg-teal-50 text-teal-700 rounded-full">
+                      {modal.faq.categoryId.name}
+                    </span>
+                  ) : (
+                    <p className="text-gray-400 text-sm">—</p>
+                  )
+                ) : (
+                  <select
+                    value={formData.categoryId}
+                    onChange={(e) => setForm((p) => ({ ...p, categoryId: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#836852] bg-white"
+                    required
+                  >
+                    <option value="" disabled>Select a category...</option>
+                    {categories.map((c) => (
+                      <option key={c._id} value={c._id}>{c.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>

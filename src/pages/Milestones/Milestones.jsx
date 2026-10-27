@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useState, useMemo } from "react";
 import {
-  Search, Award, Calendar, InboxIcon, Plus, X, Trash2,
+  Search, Award, Calendar, InboxIcon, Plus, Trash2,
   Pencil, CheckCircle, AlertCircle,
 } from "lucide-react";
 import Header from "../../layouts/partials/header";
@@ -10,6 +10,7 @@ import PageLoader from "../../components/PageLoader";
 import PageError from "../../components/PageError";
 import useFetch from "../../hooks/useFetch";
 import api from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 // ── Badge image with fallback ─────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ function EditMilestoneModal({ milestone, onClose, onSaved }) {
   const [busy, setBusy] = useState(false);
   const [err,  setErr ] = useState(null);
   const [ok,   setOk  ] = useState(false);
+  const toast = useToast();
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -58,9 +60,11 @@ function EditMilestoneModal({ milestone, onClose, onSaved }) {
         description: description.trim(),
       });
       setOk(true);
+      toast.success("Milestone updated successfully.");
       setTimeout(() => { onSaved(); onClose(); }, 800);
     } catch (e) {
       setErr(e.response?.data?.message ?? e.message ?? "Save failed.");
+      toast.error(e.response?.data?.message ?? e.message ?? "Save failed.");
     } finally {
       setBusy(false);
     }
@@ -75,9 +79,7 @@ function EditMilestoneModal({ milestone, onClose, onSaved }) {
             <Pencil className="size-4 text-[#836852]" />
             Edit Milestone
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="size-5" />
-          </button>
+         
         </div>
 
         <form onSubmit={handleSave} className="px-6 py-5 space-y-4">
@@ -145,6 +147,7 @@ export default function Milestones() {
   const [deleteBusy,     setDeleteBusy    ] = useState(false);
   const [deleteErr,      setDeleteErr     ] = useState(null);
   const [editMilestone,  setEditMilestone ] = useState(null); // milestone object being edited
+  const toast = useToast();
 
   const { data, loading, error, refetch } = useFetch("/admin/milestones");
 
@@ -171,9 +174,12 @@ export default function Milestones() {
       await api.post("/admin/milestones", form);
       setShowAdd(false);
       setForm({ title: "", description: "", badge_image: "" });
+      toast.success("Milestone created successfully.");
       await refetch();
     } catch (err) {
-      setAddErr(err.response?.data?.message ?? err.message ?? "Failed to create milestone.");
+      const message = err.response?.data?.message ?? err.message ?? "Failed to create milestone.";
+      setAddErr(message);
+      toast.error(message);
     } finally {
       setAddBusy(false);
     }
@@ -185,9 +191,12 @@ export default function Milestones() {
     try {
       await api.delete(`/admin/milestones/${deleteId}`);
       setDeleteId(null);
+      toast.success("Milestone deleted successfully.");
       await refetch();
     } catch (err) {
-      setDeleteErr(err.response?.data?.message ?? err.message ?? "Delete failed.");
+      const message = err.response?.data?.message ?? err.message ?? "Delete failed.";
+      setDeleteErr(message);
+      toast.error(message);
     } finally {
       setDeleteBusy(false);
     }
@@ -301,9 +310,7 @@ export default function Milestones() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <h2 className="text-lg font-semibold text-gray-800">Add Milestone</h2>
-              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="size-5" />
-              </button>
+              
             </div>
             <form onSubmit={handleCreate} className="px-6 py-5 space-y-4">
               <div>

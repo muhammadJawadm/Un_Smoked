@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import {
   FileText, Flag, Search, Heart, MessageSquare,
-  Film, Image, ChevronLeft, ChevronRight, X, Trash2, CheckCircle,
+  Image, ChevronLeft, ChevronRight, X, Trash2, CheckCircle, Play,
 } from "lucide-react";
 import Header from "../../layouts/partials/header";
 import StatCard from "../../components/StatCard";
@@ -10,6 +10,7 @@ import PageLoader from "../../components/PageLoader";
 import PageError from "../../components/PageError";
 import useFetch from "../../hooks/useFetch";
 import api from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 // ── shared helpers ─────────────────────────────────────────────────────────────
 
@@ -47,18 +48,53 @@ function UserCell({ user, fallback = "Deleted User" }) {
   );
 }
 
-function MediaThumb({ media }) {
+function MediaThumb({ media, onOpen }) {
   if (!media?.length) return <span className="text-gray-300 text-xs">No media</span>;
   const first = media[0];
+  const video = isVideo(first);
   return (
-    <div className="flex items-center gap-1">
-      {isVideo(first) ? (
-        <Film className="size-4 text-purple-400 shrink-0" />
-      ) : (
-        <img src={first} alt="" className="w-8 h-8 rounded object-cover shrink-0"
-          onError={(e) => { e.target.style.display = "none"; }} />
-      )}
+    <button
+      type="button"
+      onClick={() => onOpen(first)}
+      className="flex items-center gap-1.5 group"
+      title={video ? "Play video" : "View image"}
+    >
+      <div className="relative w-8 h-8 rounded overflow-hidden shrink-0 bg-gray-100">
+        {video ? (
+          <video src={first} muted playsInline preload="metadata" className="w-8 h-8 object-cover" />
+        ) : (
+          <img src={first} alt="" className="w-8 h-8 object-cover"
+            onError={(e) => { e.target.style.display = "none"; }} />
+        )}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+          {video && <Play className="size-3 text-white fill-white drop-shadow" />}
+        </div>
+      </div>
       {media.length > 1 && <span className="text-xs text-gray-400">+{media.length - 1}</span>}
+    </button>
+  );
+}
+
+function MediaLightbox({ url, onClose }) {
+  const video = isVideo(url);
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white/80 hover:text-white"
+      >
+        <X className="size-6" />
+      </button>
+      <div onClick={(e) => e.stopPropagation()} className="max-w-3xl w-full flex items-center justify-center">
+        {video ? (
+          <video src={url} controls autoPlay playsInline className="max-w-full max-h-[85vh] rounded-lg" />
+        ) : (
+          <img src={url} alt="" className="max-w-full max-h-[85vh] rounded-lg object-contain" />
+        )}
+      </div>
     </div>
   );
 }
@@ -109,14 +145,20 @@ function PostDetailModal({ postId, onClose }) {
 
   const activeList = activeTab === "likes" ? likesList : commentsList;
 
+  const [lightboxUrl, setLightboxUrl] = useState(null);
+  const toast = useToast();
+
   const handleDeleteComment = async (commentId) => {
     setCommentBusy(commentId);
     setCommentErr(null);
     try {
       await api.delete(`/admin/comments/${commentId}`);
+      toast.success("Comment deleted successfully.");
       await refetch();
     } catch (e) {
-      setCommentErr(e.response?.data?.message ?? e.message ?? "Failed to delete comment.");
+      const message = e.response?.data?.message ?? e.message ?? "Failed to delete comment.";
+      setCommentErr(message);
+      toast.error(message);
     } finally {
       setCommentBusy(null);
     }
@@ -151,17 +193,26 @@ function PostDetailModal({ postId, onClose }) {
                   <p className="text-sm text-gray-700">{post.description}</p>
                   {post.media?.length > 0 && (
                     <div className="flex gap-2 flex-wrap">
-                      {post.media.map((url, i) =>
-                        isVideo(url) ? (
-                          <div key={i} className="w-20 h-20 rounded-lg bg-purple-100 flex items-center justify-center">
-                            <Film className="size-6 text-purple-500" />
+                      {post.media.map((url, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setLightboxUrl(url)}
+                          className="relative w-20 h-20 rounded-lg overflow-hidden group shrink-0"
+                          title={isVideo(url) ? "Play video" : "View image"}
+                        >
+                          {isVideo(url) ? (
+                            <video src={url} muted playsInline preload="metadata" className="w-20 h-20 object-cover" />
+                          ) : (
+                            <img src={url} alt=""
+                              className="w-20 h-20 object-cover"
+                              onError={(e) => { e.target.style.display = "none"; }} />
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+                            {isVideo(url) && <Play className="size-5 text-white fill-white drop-shadow" />}
                           </div>
-                        ) : (
-                          <img key={i} src={url} alt=""
-                            className="w-20 h-20 rounded-lg object-cover"
-                            onError={(e) => { e.target.style.display = "none"; }} />
-                        )
-                      )}
+                        </button>
+                      ))}
                     </div>
                   )}
                   <div className="flex items-center gap-4 text-xs text-gray-400 pt-1">
@@ -264,6 +315,10 @@ function PostDetailModal({ postId, onClose }) {
           )}
         </div>
       </div>
+
+      {lightboxUrl && (
+        <MediaLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
+      )}
     </div>
   );
 }
@@ -278,10 +333,13 @@ function PostsTab() {
   const [pendingDelete,  setPendingDelete ] = useState(null);  // post id awaiting confirm
   const [actionBusy,     setActionBusy   ] = useState(false);
   const [actionErr,      setActionErr    ] = useState(null);
+  const [lightboxUrl,    setLightboxUrl  ] = useState(null);
 
   const { data, loading, error, refetch } = useFetch(
     `/admin/posts?page=${apiPage}&limit=20`
   );
+
+  const toast = useToast();
 
   const handleDeletePost = async (id) => {
     setActionBusy(true);
@@ -289,9 +347,12 @@ function PostsTab() {
     try {
       await api.delete(`/admin/posts/${id}`);
       setPendingDelete(null);
+      toast.success("Post deleted successfully.");
       await refetch();
     } catch (e) {
-      setActionErr(e.response?.data?.message ?? e.message ?? "Failed to delete post.");
+      const message = e.response?.data?.message ?? e.message ?? "Failed to delete post.";
+      setActionErr(message);
+      toast.error(message);
     } finally {
       setActionBusy(false);
     }
@@ -359,7 +420,7 @@ function PostsTab() {
                   <td className="px-5 py-3 max-w-xs">
                     <p className="text-gray-700 line-clamp-2">{post.description}</p>
                   </td>
-                  <td className="px-5 py-3"><MediaThumb media={post.media} /></td>
+                  <td className="px-5 py-3"><MediaThumb media={post.media} onOpen={setLightboxUrl} /></td>
                   <td className="px-5 py-3">
                     <span className="flex items-center gap-1 text-gray-500">
                       <Heart className="size-3 text-red-400" />{post.likesCount}
@@ -447,6 +508,10 @@ function PostsTab() {
         />
       )}
 
+      {lightboxUrl && (
+        <MediaLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
+      )}
+
       {/* Delete confirmation modal */}
       {pendingDelete && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -493,20 +558,30 @@ function ReportsTab() {
   const [local,       setLocal     ] = useState(1);
   const [actionBusy,  setActionBusy] = useState(null);  // holds report id being actioned
   const [actionErr,   setActionErr ] = useState(null);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
 
   const { data, loading, error, refetch } = useFetch("/admin/post-reports");
 
   const reports    = data?.reports;
   const pagination = data?.pagination ?? {};
 
+  const toast = useToast();
+
   const handleResolve = async (reportId, action) => {
     setActionBusy(reportId);
     setActionErr(null);
     try {
       await api.patch(`/admin/post-reports/${reportId}/resolve`, { action });
+      toast.success(
+        action === "delete_post"
+          ? "Post deleted and report resolved successfully."
+          : "Report dismissed successfully."
+      );
       await refetch();
     } catch (e) {
-      setActionErr(e.response?.data?.message ?? e.message ?? "Action failed.");
+      const message = e.response?.data?.message ?? e.message ?? "Action failed.";
+      setActionErr(message);
+      toast.error(message);
     } finally {
       setActionBusy(null);
     }
@@ -572,7 +647,7 @@ function ReportsTab() {
                     <td className="px-5 py-3 max-w-xs">
                       <p className="text-gray-700 line-clamp-2">{report.postId?.description ?? "—"}</p>
                     </td>
-                    <td className="px-5 py-3"><MediaThumb media={report.postId?.media} /></td>
+                    <td className="px-5 py-3"><MediaThumb media={report.postId?.media} onOpen={setLightboxUrl} /></td>
                     <td className="px-5 py-3"><ReasonBadge reason={report.reason} /></td>
                     <td className="px-5 py-3">
                       {resolved ? (
@@ -607,7 +682,7 @@ function ReportsTab() {
                             className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded hover:bg-green-100 disabled:opacity-50"
                           >
                             <CheckCircle className="size-3" />
-                            {busy ? "…" : "Dismiss"}
+                            {busy ? "…" : "Mark Resolved"}
                           </button>
                         </div>
                       )}
@@ -643,6 +718,10 @@ function ReportsTab() {
           </div>
         </div>
       </div>
+
+      {lightboxUrl && (
+        <MediaLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
+      )}
     </div>
   );
 }

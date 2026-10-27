@@ -378,15 +378,14 @@ export default function Notifications() {
               {mode === "broadcast" && (
                 <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100">
                   <input
-                    id="broadcast-confirm"
                     type="checkbox"
                     checked={confirmed}
                     onChange={(e) => setConfirmed(e.target.checked)}
                     className="mt-0.5 accent-[#836852] w-4 h-4 cursor-pointer"
                   />
-                  <label htmlFor="broadcast-confirm" className="text-sm text-amber-800 cursor-pointer">
+                  <p className="text-sm text-amber-800">
                     I understand this will send a notification to <strong>all users</strong> with an FCM token.
-                  </label>
+                  </p>
                 </div>
               )}
 
